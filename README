@@ -1,0 +1,227 @@
+   =========================================================
+     Geant4 - an Object-Oriented Toolkit for Simulation in HEP
+     =========================================================
+
+                            Xray_Test
+                            -------
+ How to collect energy deposition in a sampling calorimeter.
+ How to survey energy flow.
+ how to print stopping power. 
+
+ 1- GEOMETRY DEFINITION
+ 
+  The calorimeter is a box made of a given number of layers.
+  A layer consists of a sequence of various absorbers (maximum MaxAbsor=9).
+  The layer is replicated.
+ 
+
+    
+ The world size is 3 times the calorimeter size (fWorldSizeX = 3*fCalorThickness)
+ The calorimeter size is equivalent to the size of the calorimeter itself (fCalorThickness = fNbOfLayers*fLayerThickness)
+ The target lies on xfront = 1 cm 
+    G4double xcenter = xfront+0.5*fAbsorThickness[k];
+   xfront += fAbsorThickness[k];
+  fXstartAbs[k] = xcenter-0.5*fAbsorThickness[k]; 
+  fXendAbs[k]   = xcenter+0.5*fAbsorThickness[k];
+ 
+ MomentumDirection(G4ThreeVector(1.,0.,0.));		To control it simply add (/gun/direction -1 0 0)
+Beam position is in the middle of the world   (0.5*(fDetector->GetWorldSizeX()
+  
+  
+  In addition a transverse uniform magnetic field can be applied.
+  Parameters defining the calorimeter :
+    - the number of layers,
+    - the number of absorbers within a layer,		
+    - the material of the absorbers,
+    - the thickness of the absorbers,
+    - the transverse size of the calorimeter (the input face is a square). 
+     
+  The default geometry is constructed in DetectorConstruction class, but all
+  of the above parameters can be modified interactively via the commands 
+  defined in the DetectorMessenger class.
+
+
+        |<----layer 0---------->|<----layer 1---------->|<----layer 2---------->|
+        |           |           |                       |                       |
+        ==========================================================================
+        ||          |           ||          |           ||          |           ||
+        ||          |           ||          |           ||          |           ||
+        ||   abs 1  | abs 2     ||   abs 1  | abs 2     ||   abs 1  | abs 2     ||
+        ||          |           ||          |           ||          |           ||
+        ||          |           ||          |           ||          |           ||
+ beam   ||          |           ||          |           ||          |           ||
+======> ||          |           ||          |           ||          |           ||
+        ||          |           ||          |           ||          |           ||
+        ||          |           ||          |           ||          |           ||
+        ||          |           ||          |           ||          |           ||
+        ||          |           ||          |           ||          |           ||
+        ||   cell 1 | cell 2    ||   cell 3 | cell 4    ||   cell 5 | cell 6    ||
+        ==========================================================================
+        ^           ^           ^           ^           ^           ^           ^
+        pln1        pln2        pln3       pln4        pln5        pln6       pln7
+ 
+  NB. The number of absorbers and the number of layers can be set to 1.
+  In this case we have a unique homogeneous block of matter, which looks like 
+  a bubble chamber rather than a calorimeter ...
+  (see the macro emtutor.mac)
+ 
+ 2- PHYSICS LISTS
+ 
+    Physics lists can be local (eg. in this example) or from G4 kernel
+    physics_lists subdirectory.
+     
+    Local physics lists:	 
+    - "local"	standard EM physics with current 'best' options setting.
+                these options are explicited in PhysListEmStandard
+    
+    From geant4/source/physics_lists/builders:	 
+    - "emstandard_opt0" recommended standard EM physics for LHC
+    - "emstandard_opt1" best CPU performance standard physics for LHC
+    - "emstandard_opt2"     
+    - "emstandard_opt3" best current advanced EM options. 
+                        analog to "local" above  
+    - "emlivermore"   low-energy EM physics using Livermore data
+    - "empenelope"    low-energy EM physics implementing Penelope models
+    - "emlowenergy"   experimental low-energy EM physics 
+    - "emstandardWVI" standard EM physics and WentzelVI multiple scattering
+    - "emstandardSS"  standard EM physics and single scattering model
+        
+    Physics lists and options can be (re)set with UI commands
+    
+    Please, notice that options set through G4EmProcessOPtions are global, eg
+    for all particle types. In G4 builders, it is shown how to set options per
+    particle type.
+    
+ 3- AN EVENT : THE PRIMARY GENERATOR
+  The primary kinematic consists of a single particle which hits the calorimeter
+  perpendicular to the input face. The type of the particle and its energy are 
+  set in the PrimaryGeneratorAction class, and can be changed via the 
+  G4 build-in commands of ParticleGun class (see the macros provided with this 
+  example).
+ 
+ 
+ The beam could be a particle or a spectrum 
+ If a spectrum is choosen 
+ the the following lines should be included
+ /gun/spectrum on 
+ /gun/particle <name_your_particle> # gamma 
+ /gun/loadGunData <filename>: to be used with the setup 
+ [The file should end up with 
+ -1   -1
+-2   -2
+ 4- VISUALIZATION
+ 
+  The Visualization Manager is set in the main().
+  The initialisation of the drawing is done via the commands :
+  /vis/... in the macro vis.mac. 
+  	>>>>In interactive session:
+  	 > ./Xray_Test
+  	 > /control/execute vis.mac
+  	 > /run/beamOn 10
+  	 > /control/execute gui.mac
+ 	 > Activate each line in Test01.mac to see the effect 
+ 	 
+  The default view is a longitudinal view of the calorimeter.
+ 	
+  The tracks are drawn at the end of event, and erased at the end of run.
+  Optionaly one can choose to draw all particles, only the charged one, or none.
+  This command is defined in EventActionMessenger class.
+ 	
+ 5- PHYSICS DEMO
+  The particle's type and the physic processes which will be available
+  in this example are set in PhysicsList class.
+ 	
+  In addition a build-in interactive command (/process/inactivate processName)
+  allows to activate/inactivate the processes one by one.
+  Then one can well visualize the processes one by one, especially 
+  in the bubble chamber setup with a transverse magnetic field.
+
+  Notice that one can control the maximum step size in each absorber, via the
+  StepMax process and the command /testem/stepMax/absorber  
+  (see StepMax and PhysicsList classes)
+ 
+ 6- HOW TO START ?
+ 	mkdir xray-build
+	cd $/XrayMachine_Bonn/xray-build
+	cmake ../Simulation/Geant4/Xray_Test
+	make -j 
+	./Xray_Test Test01.mac
+
+	- For 'interactive mode' with visualization
+    Idle> type your commands. For instance:
+    Idle> /control/execute run01.mac
+    ....
+    Idle> exit
+ 
+ 
+
+ 7- HISTOGRAMS
+  layer     : from 1 to NbOfLayers (inclued)
+  absorbers : from 1 to NbOfAbsor (inclued)
+  planes    : from 1 to NbOfLayers*NbOfAbsor + 1 (inclued)
+    histo 21(k >=1 && k<=9)  Edep in absorbers (1-9)			[EventAction.cc]
+    if (k > MaxAbsor) title = "Edep longit. profile (keV/event) in absorber "+ id[k-MaxAbsor]; //Filled in SteppingAction.cc
+    if (k == 21) title = "energy flow (keV/event)"; 			//Filled in Run.cc
+    if (k == 22) title = "lateral energy leak (keV/event)";		//Filled in Run.cc
+    if (k == 23) title ="Secondary neutral particles";        			  	[StackingAction.cc] (Dont trust)
+    histo 24   Photon Edep in the Selected Absorber (Secondary) 			[SteppingAction.cc]  (in the scoring absorber)
+    histo 25   Photon Edep in the Selected Absorber	(Secondary) 		 	[TrackerSD.cc]       (in Sensitive Detector)
+    histo 26   Energy Deposit from step in Selected Absorber 		 		[TrackerSD.cc] 	  (in Sensitive Detector) (same as 1 and 2,28)
+    histo 27   Photon Edep From the spectrum (When spectrum used)		    [PrimaryGeneratorAction.cc]
+    histo 28   Total Energy Deposit  in Selected Absorber 	 			// Hit->GetEdep() in [EventAction.cc] with GetSDMpointer (same as 1 and 2,26)
+
+    if (k == 29) title = "Dummy";     
+    if (k == 30) title = "Dummy";			
+
+    if (k == 31) title = "(transmit, charged) : kinetic energy at exit";        //10
+    histo 32 	(transmit, neutral) : kinetic energy at exit"
+    if (k == 33) title =  "(reflect, charged) : kinetic energy at exit";  	//30
+    if (k == 34) title = "(reflect , neutral) : kinetic energy at exit";	//40* 
+    
+    
+    if (k == 35) Secondary charged particles
+    if (k == 36) Energy of phot e- at creation      
+    if (k == 37) Energy of Compton e- at creation
+    if (k == 38) Energy of photAuger or ComptAuger of e- at creation
+    if (k == 39) Energy of PIXEAuger e- at creation	
+    if (k == 40) Energy of  e- From undefined processes	
+    if (k == 41) Track Length of Secondary e-		trackLength
+    if (k == 42) Track Length of Secondary e-		vert.(x)
+
+    if (k == 43) title ="(transmit, charged) : projected angle at exit";        //13*
+    if (k == 44) title ="(transmit, neutral) : projected angle at exit";        //23*
+    if (k == 45) title ="(reflect , charged) : projected angle at exit";        //33
+    if (k == 46) title ="(reflect , neutral) : projected angle at exit";        //43
+
+    if (k == 47) title ="(transmit, charged) : projected position at exit";     //14
+    if (k == 48) title ="(transmit, charged) : radius at exit";                 //15
+    histo 49 x_vertex of charged secondaries (all)	
+    histo 50 x_vertex of charged secondaries (not absorbed)
+	
+    histo 51 Secondary charged particles (all)							[StackingAction.cc] 		
+    histo 52 Energy of phot e- at creation    						[StackingAction.cc] 
+    histo 53 Energy of Compton e- at creation   					[StackingAction.cc] 
+    histo 54 Energy of photAuger or ComptAuger of e- at creation	[StackingAction.cc] 					
+    histo 55 Energy of PIXEAuger e- at creation						[StackingAction.cc] 
+    histo 56 Energy of  e- From undefined processes					[StackingAction.cc]              
+    histo 57 Track Length of Secondary e-			stepl = aTrack->GetPosition()  	[StackingAction.cc]
+    
+    
+    
+ One can control the binning of the histo with the command:
+  /analysis/h1/set   idAbsor  nbin  Emin  Emax  unit 
+  where unit is the desired energy unit for that histo
+  
+  One can control the name of the histograms file with the command:
+  /analysis/setFileName  name  (default testem3)
+   
+  It is possible to choose the format of the histogram file : root (default),
+  xml, csv, by using namespace in HistoManager.hh 
+   	
+ It is also possible to print selected histograms on an ascii file:
+ /analysis/h1/setAscii id
+ All selected histos will be written on a file name.ascii 
+    
+Notes 
+TestEm5 is a good way to produce the original X ray spectra with no filters
+xray fluorescence can take a spectrum and produce a Filtered one 
