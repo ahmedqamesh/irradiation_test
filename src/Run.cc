@@ -1,3 +1,36 @@
+//
+// ********************************************************************
+// * License and Disclaimer                                           *
+// *                                                                  *
+// * The  Geant4 software  is  copyright of the Copyright Holders  of *
+// * the Geant4 Collaboration.  It is provided  under  the terms  and *
+// * conditions of the Geant4 Software License,  included in the file *
+// * LICENSE and available at  http://cern.ch/geant4/license .  These *
+// * include a list of copyright holders.                             *
+// *                                                                  *
+// * Neither the authors of this software system, nor their employing *
+// * institutes,nor the agencies providing financial support for this *
+// * work  make  any representation or  warranty, express or implied, *
+// * regarding  this  software system or assume any liability for its *
+// * use.  Please see the license in the file  LICENSE  and URL above *
+// * for the full disclaimer and the limitation of liability.         *
+// *                                                                  *
+// * This  code  implementation is the result of  the  scientific and *
+// * technical work of the GEANT4 collaboration.                      *
+// * By using,  copying,  modifying or  distributing the software (or *
+// * any work based  on the software)  you  agree  to acknowledge its *
+// * use  in  resulting  scientific  publications,  and indicate your *
+// * acceptance of all terms of the Geant4 Software license.          *
+// ********************************************************************
+//
+/// \file electromagnetic/TestEm3/src/Run.cc
+/// \brief Implementation of the Run class
+//
+// $Id: Run.cc 71376 2013-06-14 07:44:50Z maire $
+// 
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
 #include "Run.hh"
 #include "DetectorConstruction.hh"
 #include "PrimaryGeneratorAction.hh"
@@ -16,7 +49,7 @@
 
 #include <iomanip>
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......21 21 
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 Run::Run(DetectorConstruction* det)
 : G4Run(),
@@ -27,28 +60,21 @@ Run::Run(DetectorConstruction* det)
   fApplyLimit(false)
 {
   //initialize cumulative quantities
-  // 
-  for (G4int k=0; k<MaxAbsor; k++) {
+  //
+  for (G4int k=0; k<kMaxAbsor; k++) {
     fSumEAbs[k] = fSum2EAbs[k]  = fSumLAbs[k] = fSum2LAbs[k] = 0.;
     fEnergyDeposit[k].clear();
     fEdeptrue[k] = fRmstrue[k] = 1.;
     fLimittrue[k] = DBL_MAX;  
   }
-
+  
   //initialize Eflow
   //
   G4int nbPlanes = (fDetector->GetNbOfLayers())*(fDetector->GetNbOfAbsor()) + 2;
   fEnergyFlow.resize(nbPlanes);
   fLateralEleak.resize(nbPlanes);
   for (G4int k=0; k<nbPlanes; k++) {fEnergyFlow[k] = fLateralEleak[k] = 0.; }  
-  //intialize Transmit and reflect for the first absorber
-  fTransmit[0] = fTransmit[1] = fReflect[0] = fReflect[1] = 0;
-  fMscProjecTheta = fMscProjecTheta2 = 0.;
-  fMscThetaCentral = 0.;
-  fMscEntryCentral = 0;
 }
-
-
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -61,10 +87,6 @@ void Run::SetPrimary(G4ParticleDefinition* particle, G4double energy)
 { 
   fParticle = particle;
   fEkin = energy;
-  //compute theta0
-  fMscThetaCentral = 3*ComputeMscHighland();
-
-
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -128,12 +150,11 @@ void Run::Merge(const G4Run* run)
 
   // accumulate sums
   //
-  for (G4int k=0; k<MaxAbsor; k++) {
+  for (G4int k=0; k<kMaxAbsor; k++) {
     fSumEAbs[k]  += localRun->fSumEAbs[k]; 
     fSum2EAbs[k] += localRun->fSum2EAbs[k]; 
     fSumLAbs[k]  += localRun->fSumLAbs[k]; 
     fSum2LAbs[k] += localRun->fSum2LAbs[k];
-
   }
    
   G4int nbPlanes = (fDetector->GetNbOfLayers())*(fDetector->GetNbOfAbsor()) + 2;
@@ -152,25 +173,12 @@ void Run::Merge(const G4Run* run)
      
   fApplyLimit = localRun->fApplyLimit;
   
-  for (G4int k=1; k<=MaxAbsor; k++) {
+  for (G4int k=0; k<kMaxAbsor; k++) {
     fEdeptrue[k]  = localRun->fEdeptrue[k]; 
     fRmstrue[k]   = localRun->fRmstrue[k]; 
     fLimittrue[k] = localRun->fLimittrue[k]; 
-   if (k==MaxAbsor){
- 	   fMscThetaCentral = localRun->fMscThetaCentral;
-  	   fMscProjecTheta  += localRun->fMscProjecTheta;
-  	   fMscProjecTheta2 += localRun->fMscProjecTheta2;
- 	   fMscEntryCentral += localRun->fMscEntryCentral;
-
-  	   fTransmit[0] += localRun->fTransmit[0];  
-  	   fTransmit[1] += localRun->fTransmit[1];
-	
-  	   fReflect[0]  += localRun->fReflect[0];
-  	   fReflect[1]  += localRun->fReflect[1];
-	}
-}
-
-
+  }
+    
   G4Run::Merge(run); 
 } 
 
@@ -215,7 +223,7 @@ void Run::EndOfRun()
         G4double sume2 = 0.0;
         // compute trancated means  
         G4double lim   = rmsEAbs * 2.5;
-        for(G4int i=0; i<=nEvt; i++) {
+        for(G4int i=0; i<nEvt; i++) {
           G4double e = (fEnergyDeposit[k])[i];
           if(std::abs(e - MeanEAbs) < lim) {
             sume  += e;
@@ -242,6 +250,7 @@ void Run::EndOfRun()
       rmsLAbs  = std::sqrt(std::abs(MeanLAbs2 - MeanLAbs*MeanLAbs));
 
       //print
+      //
       G4cout
        << std::setw(14) << fDetector->GetAbsorMaterial(k)->GetName() << ": "
        << std::setprecision(5)
@@ -255,7 +264,6 @@ void Run::EndOfRun()
        << std::setw(4) << G4BestUnit( rmsLAbs,"Length")
        << G4endl;
     }
-
   G4cout << "\n------------------------------------------------------------\n";
 
   G4cout << " Beam particle " 
@@ -273,22 +281,36 @@ void Run::EndOfRun()
   //
   G4AnalysisManager* analysis = G4AnalysisManager::Instance();
   G4int Idmax = (fDetector->GetNbOfLayers())*(fDetector->GetNbOfAbsor());
-
   for (G4int Id=1; Id<=Idmax+1; Id++) {
-    analysis->FillH1(21, (G4double)Id, fEnergyFlow[Id]);
-    analysis->FillH1(22, (G4double)Id, fLateralEleak[Id]);
-
+    analysis->FillH1(2*kMaxAbsor+1, (G4double)Id, fEnergyFlow[Id]);
+    analysis->FillH1(2*kMaxAbsor+2, (G4double)Id, fLateralEleak[Id]);
   }
-
+  
   //Energy deposit from energy flow balance
   //
-  G4double EdepTot[MaxAbsor];
-  for (G4int k=0; k<MaxAbsor; k++) EdepTot[k] = 0.;
+  G4double EdepTot[kMaxAbsor];
+  for (G4int k=0; k<kMaxAbsor; k++) EdepTot[k] = 0.;
+  
   G4int nbOfAbsor = fDetector->GetNbOfAbsor();
   for (G4int Id=1; Id<=Idmax; Id++) {
-   G4int iAbsor = Id%nbOfAbsor; if (iAbsor==0) iAbsor = nbOfAbsor; 
+   G4int iAbsor = Id%nbOfAbsor; if (iAbsor==0) iAbsor = nbOfAbsor;
    EdepTot[iAbsor] += (fEnergyFlow[Id] - fEnergyFlow[Id+1] - fLateralEleak[Id]);
   }
+  
+  G4cout << std::setprecision(3)
+         << "\n Energy deposition from Energy flow balance : \n"
+         << std::setw(10) << "  material \t Total Edep \n \n";
+  G4cout.precision(6);
+  
+  for (G4int k=1; k<=nbOfAbsor; k++) {
+    EdepTot [k] *= norm;
+    G4cout << std::setw(10) << fDetector->GetAbsorMaterial(k)->GetName() << ":"
+           << "\t " << G4BestUnit(EdepTot [k],"Energy") << "\n";
+  }
+  
+  G4cout << "\n------------------------------------------------------------\n" 
+         << G4endl;
+
   // Acceptance
   EmAcceptance acc;
   G4bool isStarted = false;
@@ -309,65 +331,21 @@ void Run::EndOfRun()
   }
   if(isStarted) acc.EndOfAcceptance();
 
-  for(G4int j=1; j<=fDetector->GetNbOfAbsor(); j++){
-		if (j==fDetector->GetNbOfAbsor()){
-// Info for transmit and reflect 
-  		G4double transmit[2];
-  		transmit[0] = 100.*fTransmit[0]/nEvt;
-  		transmit[1] = 100.*fTransmit[1]/nEvt;
-  		G4double reflect[2];
-  		reflect[0] = 100.*fReflect[0]/nEvt;
-  		reflect[1] = 100.*fReflect[1]/nEvt;
- 		G4double rmsMsc = 0., tailMsc = 0.;
-  	if (fMscEntryCentral > 0) {
-    		fMscProjecTheta /= fMscEntryCentral; fMscProjecTheta2 /= fMscEntryCentral;
-    		rmsMsc = fMscProjecTheta2 - fMscProjecTheta*fMscProjecTheta;
-    		if (rmsMsc > 0.)rmsMsc = std::sqrt(rmsMsc); 
-   		if(fTransmit[1] > 0.0)tailMsc = 100.- (100.*fMscEntryCentral)/(2*fTransmit[1]);
-  				}	
-  G4cout << "\n ======================== run summary ======================\n";
-  G4cout << "\n Number of events with the primary particle transmitted = "<< transmit[1] << " %" << G4endl;
-
-  G4cout << " Number of events with at least  1 particle transmitted "
-         << "(same charge as primary) = " << transmit[0] << " %" << G4endl;
-
-  G4cout << "\n Number of events with the primary particle reflected = "
-         << reflect[1] << " %" << G4endl;
-
-  G4cout << " Number of events with at least  1 particle reflected "
-         << "(same charge as primary) = " << reflect[0] << " %" << G4endl;
-
-  // compute width of the Gaussian central part of the MultipleScattering
-  //
-  G4cout << "\n MultipleScattering:" 
-         << "\n  rms proj angle of transmit primary particle = "
-         << rmsMsc/mrad << " mrad (central part only)" << G4endl;
-
-  G4cout << "  computed theta0 (Highland formula)          = "
-         << ComputeMscHighland()/mrad << " mrad" << G4endl;
-           
-  G4cout << "  central part defined as +- "
-         << fMscThetaCentral/mrad << " mrad; " 
-         << "  Tail ratio = " << tailMsc << " %" << G4endl;
-	}
- }
-	
   //normalize histograms
   //
-  for (G4int ih = MaxAbsor+1; ih < MaxHisto; ih++) {
+  for (G4int ih = kMaxAbsor+1; ih < kMaxHisto; ih++) {
     analysis->ScaleH1(ih,norm/MeV);
   }
   
   G4cout.setf(mode,std::ios::floatfield);
   G4cout.precision(prec);
-
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void Run::SetEdepAndRMS(G4int i, G4double edep, G4double rms, G4double lim)
 {
-  if (i>=0 && i<MaxAbsor) {
+  if (i>=0 && i<kMaxAbsor) {
     fEdeptrue [i] = edep;
     fRmstrue  [i] = rms;
     fLimittrue[i] = lim;
@@ -382,23 +360,3 @@ void Run::SetApplyLimit(G4bool val)
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-G4double Run::ComputeMscHighland()
-{
-  //compute the width of the Gaussian central part of the MultipleScattering
-  //projected angular distribution.
-  //Eur. Phys. Jour. C15 (2000) page 166, formule 23.9
-
-  G4double t = (fDetector->GetAbsorThickness(1)) /(fDetector->GetAbsorMaterial(1)->GetRadlen());
-  if (t < DBL_MIN) return 0.;
-
-  G4double T = fEkin;
-  G4double M = fParticle->GetPDGMass();
-  G4double z = std::abs(fParticle->GetPDGCharge()/eplus);
-
-  G4double bpc = T*(T+2*M)/(T+M);
-  G4double teta0 = 13.6*MeV*z*std::sqrt(t)*(1.+0.038*std::log(t))/bpc;
-  return teta0;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-

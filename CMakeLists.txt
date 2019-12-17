@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Setup the project
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
-project(Xray_Test)
+project(TestEm3)
 
 #----------------------------------------------------------------------------
 # Find Geant4 package, activating all available UI and Vis drivers by default
@@ -31,19 +31,20 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 #----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries
 #
-add_executable(Xray_Test Xray_Test.cc ${sources} ${headers})
-target_link_libraries(Xray_Test ${Geant4_LIBRARIES})
+add_executable(TestEm3 TestEm3.cc ${sources} ${headers})
+target_link_libraries(TestEm3 ${Geant4_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # Copy all scripts to the build directory, i.e. the directory in which we
-# build Xray_Test. This is so that we can run the executable directly because it
+# build TestEm3. This is so that we can run the executable directly because it
 # relies on these scripts being in the current working directory.
-# Xray_Test.in Xray_Test.out
-set(Xray_Test_SCRIPTS
-    Test01.mac gammaSpectrum_Tungsten-Spectrum.dat gammaSpectrum_Be-0.3mm-Spectrum.dat gammaSpectrum_Al-0.15mm-Spectrum.dat File1.dat  gammaSpectrum_RD53.mac gammaSpectrum_RD54_No.mac icons.mac beam.mac gammaSpectrum_Al-0.15mm-Spectrum.mac gammaSpectrum_Tungsten-Spectrum.mac gammaSpectrum_Be-0.3mm-Spectrum.mac retrieveTables.mac storeTables.mac  run.png init_vis_gui.mac gui.mac vis.mac
+#
+set(TestEm3_SCRIPTS
+    atlashec.mac dedx.mac emtutor.mac ionC12.mac lhcb.mac linac.mac lockwood.mac retrieveTables.mac
+    run01.mac run02.mac radioactive.mac storeTables.mac TestEm3.in TestEm3.out tileCal.mac vis.mac
   )
 
-foreach(_script ${Xray_Test_SCRIPTS})
+foreach(_script ${TestEm3_SCRIPTS})
   configure_file(
     ${PROJECT_SOURCE_DIR}/${_script}
     ${PROJECT_BINARY_DIR}/${_script}
@@ -54,5 +55,5 @@ endforeach()
 #----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
 #
-install(TARGETS Xray_Test DESTINATION bin)
+install(TARGETS TestEm3 DESTINATION bin)
 

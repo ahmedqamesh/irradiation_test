@@ -1,3 +1,32 @@
+//
+// ********************************************************************
+// * License and Disclaimer                                           *
+// *                                                                  *
+// * The  Geant4 software  is  copyright of the Copyright Holders  of *
+// * the Geant4 Collaboration.  It is provided  under  the terms  and *
+// * conditions of the Geant4 Software License,  included in the file *
+// * LICENSE and available at  http://cern.ch/geant4/license .  These *
+// * include a list of copyright holders.                             *
+// *                                                                  *
+// * Neither the authors of this software system, nor their employing *
+// * institutes,nor the agencies providing financial support for this *
+// * work  make  any representation or  warranty, express or implied, *
+// * regarding  this  software system or assume any liability for its *
+// * use.  Please see the license in the file  LICENSE  and URL above *
+// * for the full disclaimer and the limitation of liability.         *
+// *                                                                  *
+// * This  code  implementation is the result of  the  scientific and *
+// * technical work of the GEANT4 collaboration.                      *
+// * By using,  copying,  modifying or  distributing the software (or *
+// * any work based  on the software)  you  agree  to acknowledge its *
+// * use  in  resulting  scientific  publications,  and indicate your *
+// * acceptance of all terms of the Geant4 Software license.          *
+// ********************************************************************
+//
+// $Id$
+//
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "PhysListEmStandard.hh"
 #include "G4ParticleDefinition.hh"
@@ -29,9 +58,10 @@
 #include "G4IonParametrisedLossModel.hh"
 #include "G4NuclearStopping.hh"
 
-#include "G4EmProcessOptions.hh"
+#include "G4EmParameters.hh"
 #include "G4MscStepLimitType.hh"
 
+#include "G4BuilderType.hh"
 #include "G4LossTableManager.hh"
 #include "G4UAtomicDeexcitation.hh"
 
@@ -41,7 +71,20 @@
 
 PhysListEmStandard::PhysListEmStandard(const G4String& name)
    :  G4VPhysicsConstructor(name)
-{}
+{
+  G4EmParameters* param = G4EmParameters::Instance();
+  param->SetDefaults();
+  param->SetVerbose(1);
+  param->SetMinEnergy(10*eV);
+  param->SetMaxEnergy(10*TeV);
+  param->SetLowestElectronEnergy(100*eV);
+  param->SetNumberOfBinsPerDecade(20);
+  param->SetMscStepLimitType(fUseSafetyPlus);
+  param->SetFluo(true);
+  param->SetAuger(false);
+  param->SetPixe(false);
+  SetPhysicsType(bElectromagnetic);
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -56,9 +99,10 @@ void PhysListEmStandard::ConstructProcess()
   
   // Add standard EM Processes
   //
-  aParticleIterator->reset();
-  while( (*aParticleIterator)() ){
-    G4ParticleDefinition* particle = aParticleIterator->value();
+  auto particleIterator=GetParticleIterator();
+  particleIterator->reset();
+  while( (*particleIterator)() ){
+    G4ParticleDefinition* particle = particleIterator->value();
     G4String particleName = particle->GetParticleName();
      
     if (particleName == "gamma") {
@@ -141,30 +185,9 @@ void PhysListEmStandard::ConstructProcess()
     }
   }
 
-  // Em options
-  //
-  // Main options and setting parameters are shown here.
-  // Several of them have default values.
-  //
-  G4EmProcessOptions emOptions;
-  
-  //physics tables
-  //
-  emOptions.SetMinEnergy(10*eV);        //default 100 eV   
-  emOptions.SetMaxEnergy(10*TeV);        //default 100 TeV 
-  emOptions.SetDEDXBinning(12*10);        //default=12*7
-  emOptions.SetLambdaBinning(12*10);        //default=12*7
-  
-  //multiple coulomb scattering
-  //
-  emOptions.SetMscStepLimitation(fUseSafetyPlus);  //default=fUseSafety
-    
   // Deexcitation
   //
   G4VAtomDeexcitation* de = new G4UAtomicDeexcitation();
-  de->SetFluo(true);
-  de->SetAuger(false);   
-  de->SetPIXE(false);  
   G4LossTableManager::Instance()->SetAtomDeexcitation(de);
 }
 

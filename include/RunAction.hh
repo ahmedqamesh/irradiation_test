@@ -1,8 +1,41 @@
+//
+// ********************************************************************
+// * License and Disclaimer                                           *
+// *                                                                  *
+// * The  Geant4 software  is  copyright of the Copyright Holders  of *
+// * the Geant4 Collaboration.  It is provided  under  the terms  and *
+// * conditions of the Geant4 Software License,  included in the file *
+// * LICENSE and available at  http://cern.ch/geant4/license .  These *
+// * include a list of copyright holders.                             *
+// *                                                                  *
+// * Neither the authors of this software system, nor their employing *
+// * institutes,nor the agencies providing financial support for this *
+// * work  make  any representation or  warranty, express or implied, *
+// * regarding  this  software system or assume any liability for its *
+// * use.  Please see the license in the file  LICENSE  and URL above *
+// * for the full disclaimer and the limitation of liability.         *
+// *                                                                  *
+// * This  code  implementation is the result of  the  scientific and *
+// * technical work of the GEANT4 collaboration.                      *
+// * By using,  copying,  modifying or  distributing the software (or *
+// * any work based  on the software)  you  agree  to acknowledge its *
+// * use  in  resulting  scientific  publications,  and indicate your *
+// * acceptance of all terms of the Geant4 Software license.          *
+// ********************************************************************
+//
+/// \file electromagnetic/TestEm3/include/RunAction.hh
+/// \brief Definition of the RunAction class
+//
+// $Id$
+//
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
 #ifndef RunAction_h
 #define RunAction_h 1
+
 #include "G4UserRunAction.hh"
 #include "globals.hh"
-#include <map>
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -12,10 +45,6 @@ class PrimaryGeneratorAction;
 class RunActionMessenger;
 class HistoManager;
 class G4Timer;
-
-class G4Run;
-class DataSet;
-class G4DataVector;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -27,36 +56,15 @@ public:
  ~RunAction();
 
   virtual G4Run* GenerateRun();
-
+  virtual void BeginOfRunAction(const G4Run*);
+  virtual void   EndOfRunAction(const G4Run*);
    
   // Acceptance parameters
   void SetEdepAndRMS(G4int, G4double, G4double, G4double);
   void SetApplyLimit(G4bool val);
-  void SetFileName  (G4String val);
-  const DataSet* GetSet() const;
-  const DataSet* GetGammaSet() const;
-
-  G4DataVector* GetEnergies() const;
-  G4DataVector* GetData() const;
-
-
-public:
-  void BeginOfRunAction(const G4Run*);
-  void   EndOfRunAction(const G4Run*);
-  //returns the sum of the element of data
-  G4double GetDataSum() const;
-  G4String GetFileName(){return File;}
 
 private:
-  void Initialise();
-  G4bool isInitialized;
-
-  const DataSet* dataSet;
-  const DataSet* dataGammaSet;  //stores the data of the incident gamma spectrum
-  G4DataVector* energies; //stores the energy data of the proton and alpha spectra
-  G4DataVector* data;//stores the data of the proton and alpha spectra
-  void ReadData(G4double,G4String);//read the data for protons and alpha spectra
-  G4String File ;
+  
   DetectorConstruction*   fDetector;
   PrimaryGeneratorAction* fPrimary;
   Run*                    fRun;      
@@ -65,6 +73,7 @@ private:
   G4Timer*                fTimer;
 };
 
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #endif
 
