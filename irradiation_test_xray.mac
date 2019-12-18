@@ -1,6 +1,5 @@
 # $Id$
 #
-# Macro file for "TestEm3.cc" 
 # (can be run in batch, without graphic)
 #
 # Tungsten-Silicon 50 layers; electron 1 GeV
@@ -8,9 +7,9 @@
 /control/verbose 2
 /run/verbose 2
 #
-#/testem/phys/addPhysics  local
+/testem/phys/addPhysics  local
 #
-/testem/det/setNbOfLayers 50
+/testem/det/setNbOfLayers 1
 /testem/det/setNbOfAbsor 2
 /testem/det/setAbsor 1 Tungsten 2 mm
 /testem/det/setAbsor 2 Silicon 0.3 mm
@@ -29,4 +28,4 @@
 #
 /run/printProgress 50
 #
-/run/beamOn 200
+/run/beamOn 20000
