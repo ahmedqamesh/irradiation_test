@@ -70,7 +70,7 @@ Run::Run(DetectorConstruction* det)
   
   //initialize Eflow
   //
-  G4int nbPlanes = (fDetector->GetNbOfLayers())*(fDetector->GetNbOfAbsor()) + 2;
+  G4int nbPlanes = (1)*(fDetector->GetNbOfAbsor()) + 2;
   fEnergyFlow.resize(nbPlanes);
   fLateralEleak.resize(nbPlanes);
   for (G4int k=0; k<nbPlanes; k++) {fEnergyFlow[k] = fLateralEleak[k] = 0.; }  
@@ -157,7 +157,7 @@ void Run::Merge(const G4Run* run)
     fSum2LAbs[k] += localRun->fSum2LAbs[k];
   }
    
-  G4int nbPlanes = (fDetector->GetNbOfLayers())*(fDetector->GetNbOfAbsor()) + 2;
+  G4int nbPlanes = (1)*(fDetector->GetNbOfAbsor()) + 2;
   for (G4int k=0; k<nbPlanes; k++) {
     fEnergyFlow[k]   += localRun->fEnergyFlow[k];
     fLateralEleak[k] += localRun->fLateralEleak[k];
@@ -280,7 +280,7 @@ void Run::EndOfRun()
   //Energy flow
   //
   G4AnalysisManager* analysis = G4AnalysisManager::Instance();
-  G4int Idmax = (fDetector->GetNbOfLayers())*(fDetector->GetNbOfAbsor());
+  G4int Idmax = 1*(fDetector->GetNbOfAbsor());
   for (G4int Id=1; Id<=Idmax+1; Id++) {
     analysis->FillH1(2*kMaxAbsor+1, (G4double)Id, fEnergyFlow[Id]);
     analysis->FillH1(2*kMaxAbsor+2, (G4double)Id, fLateralEleak[Id]);
@@ -317,7 +317,7 @@ void Run::EndOfRun()
   for (G4int j=1; j<=fDetector->GetNbOfAbsor(); j++) {
     if (fLimittrue[j] < DBL_MAX) {
       if (!isStarted) {
-        acc.BeginOfAcceptance("Sampling Calorimeter",nEvt);
+        acc.BeginOfAcceptance("Sampling Detector",nEvt);
         isStarted = true;
       }
       MeanEAbs = fSumEAbs[j];

@@ -61,7 +61,7 @@ DetectorMessenger::DetectorMessenger(DetectorConstruction * Det)
   fDetDir->SetGuidance("detector construction commands");
   
   fSizeYZCmd = new G4UIcmdWithADoubleAndUnit("/testem/det/setSizeYZ",this);
-  fSizeYZCmd->SetGuidance("Set tranverse size of the calorimeter");
+  fSizeYZCmd->SetGuidance("Set tranverse size of the Detector");
   fSizeYZCmd->SetParameterName("Size",false);
   fSizeYZCmd->SetRange("Size>0.");
   fSizeYZCmd->SetUnitCategory("Length");
@@ -129,7 +129,7 @@ DetectorMessenger::~DetectorMessenger()
 void DetectorMessenger::SetNewValue(G4UIcommand* command,G4String newValue)
 {
   if( command == fSizeYZCmd )
-   { fDetector->SetCalorSizeYZ(fSizeYZCmd->GetNewDoubleValue(newValue));}
+   { fDetector->SetDetectorSizeYZ(fSizeYZCmd->GetNewDoubleValue(newValue));}
 
   if( command == fNbLayersCmd )
    { fDetector->SetNbOfLayers(fNbLayersCmd->GetNewIntValue(newValue));}

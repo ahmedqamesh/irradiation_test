@@ -84,7 +84,7 @@ G4double Ionedep=edep-NonIonedep;
 
   G4TouchableHistory* touchable = (G4TouchableHistory*)(step->GetPreStepPoint()->GetTouchable());
     
-  // Get calorimeter cell id 
+  // Get Detector cell id
   G4int layerNumber = touchable->GetReplicaNumber(1);
   
   // Get hit accounting data for this cell

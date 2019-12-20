@@ -71,7 +71,7 @@ void TrackingAction::PreUserTrackingAction(const G4Track* track )
     if (track->GetDefinition() == G4Positron::Positron())
       Eflow += 2*electron_mass_c2; 
          
-    //flux artefact, if primary vertex is inside the calorimeter   
+    //flux artefact, if primary vertex is inside the Detector
     for (G4int pl=1; pl<=Idnow; pl++) {run->SumEnergyFlow(pl, Eflow);}
   } else {
     run->AddSecondaryTrack(track);

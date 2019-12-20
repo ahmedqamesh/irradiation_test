@@ -108,7 +108,7 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
   if (endPoint->GetStepStatus() == fGeomBoundary) {
     G4ThreeVector position  = endPoint->GetPosition();
     G4ThreeVector direction = endPoint->GetMomentumDirection();
-    G4double sizeYZ = 0.5*fDetector->GetCalorSizeYZ();       
+    G4double sizeYZ = 0.5*fDetector->GetDetectorSizeYZ();
     G4double Eflow = endPoint->GetKineticEnergy();
     if (particle == G4Positron::Positron()) Eflow += 2*electron_mass_c2;
    if ((std::abs(position.y()) >= sizeYZ) || (std::abs(position.z()) >= sizeYZ))

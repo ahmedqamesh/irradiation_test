@@ -1,35 +1,3 @@
-//
-// ********************************************************************
-// * License and Disclaimer                                           *
-// *                                                                  *
-// * The  Geant4 software  is  copyright of the Copyright Holders  of *
-// * the Geant4 Collaboration.  It is provided  under  the terms  and *
-// * conditions of the Geant4 Software License,  included in the file *
-// * LICENSE and available at  http://cern.ch/geant4/license .  These *
-// * include a list of copyright holders.                             *
-// *                                                                  *
-// * Neither the authors of this software system, nor their employing *
-// * institutes,nor the agencies providing financial support for this *
-// * work  make  any representation or  warranty, express or implied, *
-// * regarding  this  software system or assume any liability for its *
-// * use.  Please see the license in the file  LICENSE  and URL above *
-// * for the full disclaimer and the limitation of liability.         *
-// *                                                                  *
-// * This  code  implementation is the result of  the  scientific and *
-// * technical work of the GEANT4 collaboration.                      *
-// * By using,  copying,  modifying or  distributing the software (or *
-// * any work based  on the software)  you  agree  to acknowledge its *
-// * use  in  resulting  scientific  publications,  and indicate your *
-// * acceptance of all terms of the Geant4 Software license.          *
-// ********************************************************************
-//
-/// \file electromagnetic/TestEm3/src/DetectorConstruction.cc
-/// \brief Implementation of the DetectorConstruction class
-//
-// $Id$
-//
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 #include "DetectorConstruction.hh"
 #include "DetectorMessenger.hh"
 #include "G4NistManager.hh"
@@ -61,33 +29,57 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 DetectorConstruction::DetectorConstruction() :
-		G4VUserDetectorConstruction(), fDefaultMaterial(0), fSolidWorld(0), fLogicWorld(
-				0), fPhysiWorld(0), fSolidCalor(0), fLogicCalor(0), fPhysiCalor(
-				0), fSolidLayer(0), fLogicLayer(0), fPhysiLayer(0), fScoringVolume(
-				0), fDetectorMessenger(0) {
+		G4VUserDetectorConstruction(), fCheckOverlaps(true), fDefaultMaterial(
+				0), fSolidWorld(0), fLogicWorld(0), fPhysiWorld(0), fSolidCollInner(
+				0), fLogicCollInner(0), fPhysCollInner(0), fSolidCollOuter(0), fLogicCollOuter(
+				0), fPhysCollOuter(0), fSolidShield(0), fLogicShield(0), fPhysShield(
+				0), fScoringVolume(0), fDetectorMessenger(0) {
+
 	// default parameter values
 	fNbOfAbsor = 21;
 	fNbOfFilter = 2;
 	fNbOfLayers = 1;
 
-	fCalorSizeYZ = 2. * cm;
-	ComputeCalorParameters();
+	ComputeDetectorParameters();
 	//================================== position ============================================================
-	//Absorber
-	fXposAbs[1] = 3.0 * cm;
+	// Shield
+	fXposShield = 10 * cm;
+	//Absorber : at position 9 cm from the world center
+	fXposAbs[1] = 9 * cm;
 
-	// Filter
-	fXposFilter[1] = -2.0 * cm;
-	fXposFilter[2] = 0.0 * cm;  // Keep 2 cm between the two Filters
+	//collimator 1 : 4 cm away from the absorbers
+	fXposinCollimator = 5.0 * cm;
 
-	//Collimators
-	fXposinCollimator = -1.0 * cm;
-	fXposoutCollimator = 1 * cm;
+	// Filter 1: 5 cm away from  collimator 1
+	fXposFilter[1] = 0.0 * cm;
+
+	//collimator 2 : 1 cm away from the Filter 1
+	fXposoutCollimator = -1.0 * cm;
+
+	// Filter 2: 2 cm away from  collimator 2
+	fXposFilter[2] = -3.0 * cm;
 
 	//================================== Dimensions ===========================================================
-	//Absorber
-	fAbsSizeYZ = 1. * cm;
+	//YZ dimensions
+	fDetectorSizeYZ = 40. * cm;
+	fCollimatorYZ = 40.0 * cm;
 
+	fAbsSizeYZ = 40. * cm;
+	fFilterYZ[1] = 40. * cm;
+	fFilterYZ[2] = 40. * cm;
+
+	//Filter
+	fFilterThickness[1] = 0.3 * mm;
+	fFilterThickness[2] = 0.15 * mm;
+
+	// collimators
+	fCollinradius = 5 * mm;
+	fColloutradius = 1.5 * mm;
+
+	fCollimatorinThickness = 2.0 * cm;
+	fCollimatoroutThickness = 0.5 * cm;
+
+	//Absorber
 	fAbsorThickness[1] = 0.21 * mm;
 	fAbsorThickness[2] = 0.78 * mm;
 	fAbsorThickness[3] = 0.5 * mm;
@@ -113,53 +105,30 @@ DetectorConstruction::DetectorConstruction() :
 	fAbsorThickness[20] = 0.0218 * mm;
 	fAbsorThickness[21] = 0.00031 * mm;
 
-	//Filter
-	fFilterYZ[1] = 1.0 * cm;
-	fFilterYZ[2] = 2.0 * cm;
-	fFilterThickness[1] = 0.3 * mm;
-	fFilterThickness[2] = 0.15 * mm;
-
-	// collimators
-	fCollinradius = 0.5 * mm;
-	fColloutradius = 0.5 * mm;
-	fCollimatorYZ = 1.5 * cm;
-	fCollimatorinThickness = 0.5 * cm;
-	fCollimatoroutThickness = 1. * cm;
-
+	//Shield
+	fShieldThickness = 2 * cm;
 	//================================== materials===========================================================
 	DefineMaterials();
 	SetWorldMaterial("G4_AIR");
-
 	// Absorber
-	SetAbsorMaterial(1, "quartz");
-	SetAbsorMaterial(2, "G4_Al");
+	const G4String Absorber_id[] = { "quartz", "G4_Al", "quartz", "G4_Cu",
+			"G4_Cu", "G4_Cu", "G4_Cu", "G4_Cu", "G4_Cu", "G4_Cu", "G4_Cu",
+			"G4_Cu", "G4_Cu", "G4_Cu", "G4_Cu", "G4_Cu", "quartz", "quartz",
+			"quartz", "quartz", "quartz", "quartz" };
 
-	SetAbsorMaterial(3, "quartz");
-	SetAbsorMaterial(4, "G4_Cu");
-	SetAbsorMaterial(5, "G4_Cu");
-	SetAbsorMaterial(6, "G4_Cu");
-	SetAbsorMaterial(7, "G4_Cu");
-	SetAbsorMaterial(8, "G4_Cu");
-	SetAbsorMaterial(9, "G4_Cu");
-
-	SetAbsorMaterial(10, "G4_Cu");
-	SetAbsorMaterial(11, "G4_Cu");
-
-	SetAbsorMaterial(12, "G4_Cu");
-	SetAbsorMaterial(13, "G4_Cu");
-	SetAbsorMaterial(14, "G4_Cu");
-	SetAbsorMaterial(15, "G4_Cu");
-	SetAbsorMaterial(16, "G4_Cu");
-	SetAbsorMaterial(17, "G4_Cu");
-	SetAbsorMaterial(18, "G4_Cu");
-	SetAbsorMaterial(19, "quartz");
-	SetAbsorMaterial(20, "G4_Cu");
-	SetAbsorMaterial(21, "quartz");
+	for (G4int k = 1; k <= fNbOfAbsor; k++) {
+		SetAbsorMaterial(k, Absorber_id[k]);
+	}
 
 	//Filter
 	SetFilterMaterial(1, "G4_Be");
 	SetFilterMaterial(2, "G4_Al");
-	// create commands for interactive definition of the calorimeter
+	//collimator
+	fCollMaterialOuter = G4NistManager::Instance()->FindOrBuildMaterial(
+			"G4_Al");
+	fCollMaterialInner = G4NistManager::Instance()->FindOrBuildMaterial(
+			"G4_PLEXIGLASS");
+	// create commands for interactive definition of the Detectorimeter
 	fDetectorMessenger = new DetectorMessenger(this);
 }
 
@@ -171,12 +140,490 @@ DetectorConstruction::~DetectorConstruction() {
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-G4VPhysicalVolume* DetectorConstruction::Construct() {
-	return ConstructCalorimeter();
+void DetectorConstruction::ComputeDetectorParameters() {
+	// Compute derived parameters of the detector
+	fLayerThickness = 0.;
+	for (G4int iAbs = 1; iAbs <= fNbOfAbsor; iAbs++) {
+		fLayerThickness += fAbsorThickness[iAbs];
+	}
+	fWorldSizeX = 25 * cm; //1.2 * fLayerThickness;
+	fWorldSizeYZ = 1.2 * fDetectorSizeYZ;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+G4VPhysicalVolume* DetectorConstruction::Construct() {
+	G4cout << "DetectorConstruction::Construct()" << G4endl;
+	// complete the Detector parameters definition
+	ComputeDetectorParameters();
+
+	// Cleanup old geometry
+	G4GeometryManager::GetInstance()->OpenGeometry();
+	G4PhysicalVolumeStore::GetInstance()->Clean();
+	G4LogicalVolumeStore::GetInstance()->Clean();
+	G4SolidStore::GetInstance()->Clean();
+
+	//VisAttributes
+	G4VisAttributes * Black = new G4VisAttributes(G4Colour(0.0, 0.0, 0.0));
+	G4VisAttributes * Gray = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5));
+	G4VisAttributes * yellow = new G4VisAttributes(
+			G4Colour(255 / 255., 255 / 255., 51 / 255.));
+	G4VisAttributes * red = new G4VisAttributes(
+			G4Colour(255 / 255., 0 / 255., 0 / 255.));
+	G4VisAttributes * blue = new G4VisAttributes(
+			G4Colour(0 / 255., 0 / 255., 255 / 255.));
+	G4VisAttributes* collOuterVisAtt = new G4VisAttributes(
+			G4Colour(240. / 255., 240. / 255., 222. / 255., 3. / 5.));
+	G4VisAttributes* collInnerVisAtt = new G4VisAttributes(
+			G4Colour(240. / 255., 240. / 255., 222. / 255., 3. / 5.));
+
+	Black->SetVisibility(true);
+
+	Gray->SetVisibility(true);
+	Gray->SetForceSolid(true);
+
+	yellow->SetVisibility(true);
+	yellow->SetForceSolid(true);
+
+	red->SetVisibility(true);
+	red->SetForceSolid(true);
+
+	blue->SetVisibility(true);
+	blue->SetForceSolid(true);
+
+	collOuterVisAtt->SetVisibility(true);
+	collOuterVisAtt->SetForceSolid(true);
+
+	collInnerVisAtt->SetVisibility(true);
+	collInnerVisAtt->SetForceSolid(true);
+	//
+	// World (Experimental place)
+	//
+
+	fSolidWorld = new G4Box("World", fWorldSizeX / 2, fWorldSizeYZ / 2,
+			fWorldSizeYZ / 2);
+	fLogicWorld = new G4LogicalVolume(fSolidWorld, fDefaultMaterial, "World");
+
+	fPhysiWorld = new G4PVPlacement(0, G4ThreeVector(), fLogicWorld, "World", 0,
+			false, 0, fCheckOverlaps);
+
+	// Absorbers
+	G4RotationMatrix rotm2 = G4RotationMatrix();
+	rotm2.rotateZ(0 * deg);
+	for (G4int k = 1; k <= fNbOfAbsor; k++) {
+		G4double xcenter = fXposAbs[1] - 0.5 * fAbsorThickness[k];
+		fXposAbs[1] += fAbsorThickness[k];
+		fXstartAbs[k] = xcenter - 0.5 * fAbsorThickness[k];
+		fXendAbs[k] = xcenter + 0.5 * fAbsorThickness[k];
+		fSolidAbsor[k] = new G4Box(fAbsorMaterial[k]->GetName(),
+				fAbsorThickness[k] / 2, fDetectorSizeYZ / 2,
+				fDetectorSizeYZ / 2);
+		fLogicAbsor[k] = new G4LogicalVolume(fSolidAbsor[k], fAbsorMaterial[k],
+				fAbsorMaterial[k]->GetName());
+		fPhysiAbsor[k] = new G4PVPlacement(0, G4ThreeVector(xcenter, 0., 0.),
+				fLogicAbsor[k], fAbsorMaterial[k]->GetName(), fLogicWorld,
+				false, k, fCheckOverlaps);
+		if (k == 1 || k == 3 || k == 5 || k == 7 || k == 9 || k == 11 || k == 13
+				|| k == 15 || k == 17 || k == 19 || k == 21)
+			fLogicAbsor[k]->SetVisAttributes(blue);
+		if (k == 2)
+			fLogicAbsor[k]->SetVisAttributes(yellow);
+		if (k == 4 || k == 6 || k == 8 || k == 10 || k == 12 || k == 14
+				|| k == 16 || k == 18 || k == 20)
+			fLogicAbsor[k]->SetVisAttributes(red);
+	}
+
+	//Collimators
+	//two cylinders with different material and small hole in the middle
+	//
+	G4RotationMatrix rotm1 = G4RotationMatrix();
+	rotm1.rotateY(90 * deg);
+	rotm1.rotateZ(0 * deg);
+
+	G4double xcollimatorincenter = fXposinCollimator
+			- 0.5 * fCollimatorinThickness;
+
+	fSolidCollInner = new G4Tubs("CollimatorInner", fCollinradius,
+			fCollimatorYZ / 2, fCollimatorinThickness, 0. * deg, 360. * deg);
+	fLogicCollInner = new G4LogicalVolume(fSolidCollInner, fCollMaterialInner,
+			"CollimatorInner");
+	fPhysCollInner = new G4PVPlacement(
+			G4Transform3D(rotm1, G4ThreeVector(xcollimatorincenter, 0, 0)),
+			fLogicCollInner, "CollimatorInner", fLogicWorld, false, 0,
+			fCheckOverlaps);                                //overlaps checking
+	fLogicCollInner->SetVisAttributes(collInnerVisAtt);
+
+	G4double xcollimatoroutcenter = fXposoutCollimator
+			- 0.5 * fCollimatoroutThickness;
+	fSolidCollOuter = new G4Tubs("CollimatorOuter", fColloutradius,
+			fCollimatorYZ / 2, fCollimatoroutThickness, 0. * deg, 360. * deg);
+
+	fLogicCollOuter = new G4LogicalVolume(fSolidCollOuter, fCollMaterialOuter,
+			"CollimatorOuter");
+	fPhysCollOuter = new G4PVPlacement(
+			G4Transform3D(rotm1, G4ThreeVector(xcollimatoroutcenter, 0, 0)),
+			fLogicCollOuter, "CollimatorOuter", fLogicWorld, false, 0,
+			fCheckOverlaps);                                //overlaps checking
+	fLogicCollOuter->SetVisAttributes(collOuterVisAtt);
+	/*
+	// Filters
+	G4RotationMatrix rotm3 = G4RotationMatrix();
+	rotm3.rotateY(90 * deg);
+	rotm3.rotateZ(0 * deg);
+	G4double i = 0.0;
+	for (G4int k = 1; k <= fNbOfFilter; k++) {
+		G4double x2center = fXposFilter[k] + 0.5 * fFilterThickness[k];
+		fXstartFilter[k] = x2center - 0.5 * fFilterThickness[k];
+		fXendFilter[k] = x2center + 0.5 * fFilterThickness[k];
+		if (k != fNbOfFilter) {
+			fSolidFilter[k] = new G4Tubs("Filter1", 0. * mm, fFilterYZ[k] / 2,
+					fFilterThickness[k] / 2, 0.0 * deg, 360. * deg);
+			fLogicFilter[k] = new G4LogicalVolume(fSolidFilter[k],
+					fFilterMaterial[k], "Filter1");
+			fPhysiFilter[k] = new G4PVPlacement(
+					G4Transform3D(rotm3, G4ThreeVector(x2center, 0.0, 0.)),
+					fLogicFilter[k], fFilterMaterial[k]->GetName(), fLogicWorld,
+					false, k, fCheckOverlaps);
+			// Set Filter[1] as scoring volume (Most probably the Al filter)
+			fScoringVolume = fLogicFilter[k];
+
+		}
+		if (k == fNbOfFilter) { // Filter 2 is a sensitive detector
+			fSolidFilter[k] = new G4Tubs("Filter2", 0. * mm, fFilterYZ[k] / 2,
+					fFilterThickness[k] / 2, 0.0 * deg, 360. * deg);
+			fLogicFilter[k] = new G4LogicalVolume(fSolidFilter[k],
+					fFilterMaterial[k], "Filter2");
+			//G4cout<<k<<"fXposAbs = "<<x2center<<" & fXstartAbs = "<<fXstartFilter[k]<<" fXendAbs = "<<fXendFilter[k]<<" fFilterThickness = "<<fFilterThickness[k]<<"mm"<<G4endl;
+			fPhysiFilter[k] = new G4PVPlacement(
+					G4Transform3D(rotm3, G4ThreeVector(x2center, 0.0, 0.)),
+					fLogicFilter[k], fFilterMaterial[k]->GetName(), fLogicWorld,
+					false, k, fCheckOverlaps);
+		}
+		fLogicFilter[k]->SetVisAttributes(Gray);
+		i += fXposFilter[k];
+	}
+	SetSizeX(i);
+
+	//	Setup shielding
+	fSolidShield = new G4Box("Shield", fShieldThickness / 2,
+			fDetectorSizeYZ / 2, fDetectorSizeYZ / 2);
+	fShieldMaterial = G4NistManager::Instance()->FindOrBuildMaterial("G4_Pb");
+	fLogicShield = new G4LogicalVolume(fSolidShield, fShieldMaterial, "Shield");
+	fPhysShield = new G4PVPlacement(0, G4ThreeVector(fXposShield, 0, 0),
+			fLogicShield, "Shield", fLogicWorld, false, 0, fCheckOverlaps);
+	fLogicShield->SetVisAttributes(Black);
+*/
+	//PrintDetectorParameters();
+	//always return the fPhysical World
+	return fPhysiWorld;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::PrintDetectorParameters() {
+	G4cout << "\n-------------------------------------------------------------"
+			<< "\n ---> The Detectorimeter is " << fNbOfLayers << " layers of:";
+	for (G4int i = 1; i <= fNbOfAbsor; i++) {
+		G4cout << "\n \t" << std::setw(12) << fAbsorMaterial[i]->GetName()
+				<< ": " << std::setw(6)
+				<< G4BestUnit(fAbsorThickness[i], "Length");
+	}
+	G4cout
+			<< "\n-------------------------------------------------------------\n";
+
+	G4cout << "\n" << fDefaultMaterial << G4endl;
+	for (G4int j = 1; j <= fNbOfAbsor; j++)
+		G4cout << "\n" << fAbsorMaterial[j] << G4endl;
+
+	G4cout
+			<< "\n-------------------------------------------------------------\n";
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetWorldMaterial(const G4String& material) {
+	// search the material by its name
+	G4Material* pttoMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
+			material);
+	if (pttoMaterial)
+		fDefaultMaterial = pttoMaterial;
+	G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetNbOfLayers(G4int ival) {
+	// set the number of Layers
+	//
+	if (ival < 1) {
+		G4cout << "\n --->warning from SetfNbOfLayers: " << ival
+				<< " must be at least 1. Command refused" << G4endl;
+		return;
+	}
+	fNbOfLayers = ival;
+	G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetNbOfAbsor(G4int ival) {
+	// set the number of Absorbers
+	//
+	if (ival < 1 || ival > (kMaxAbsor - 1)) {
+		G4cout << "\n ---> warning from SetfNbOfAbsor: " << ival
+				<< " must be at least 1 and and most " << kMaxAbsor - 1
+				<< ". Command refused" << G4endl;
+		return;
+	}
+	fNbOfAbsor = ival;
+	G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetAbsorMaterial(G4int ival,
+		const G4String& material) {
+	// search the material by its name
+	//
+	if (ival > kMaxAbsor || ival <= 0) {
+		G4cout << "\n --->warning from SetAbsorMaterial: absor number " << ival
+				<< " out of range. Command refused" << G4endl;
+		return;
+	}
+
+	G4Material* pttoMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
+			material);
+	if (pttoMaterial)
+		fAbsorMaterial[ival] = pttoMaterial;
+	G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetAbsorThickness(G4int ival, G4double val) {
+	// change Absorber thickness
+	//
+	if (ival > fNbOfAbsor || ival <= 0) {
+		G4cout << "\n --->warning from SetAbsorThickness: absor number " << ival
+				<< " out of range. Command refused" << G4endl;
+		return;
+	}
+	if (val <= DBL_MIN) {
+		G4cout << "\n --->warning from SetAbsorThickness: thickness " << val
+				<< " out of range. Command refused" << G4endl;
+		return;
+	}
+	fAbsorThickness[ival] = val;
+	G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetDetectorSizeYZ(G4double val) {
+	// change the transverse size
+	//
+	if (val <= DBL_MIN) {
+		G4cout << "\n --->warning from SetfDetectorSizeYZ: thickness " << val
+				<< " out of range. Command refused" << G4endl;
+		return;
+	}
+	fDetectorSizeYZ = val;
+	G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+#include "G4GlobalMagFieldMessenger.hh"
+#include "G4AutoDelete.hh"
+
+void DetectorConstruction::ConstructSDandField() {
+	if (fFieldMessenger.Get() == 0) {
+		// Create global magnetic field messenger.
+		// Uniform magnetic field is then created automatically if
+		// the field value is not zero.
+		G4ThreeVector fieldValue = G4ThreeVector();
+		G4GlobalMagFieldMessenger* msg = new G4GlobalMagFieldMessenger(
+				fieldValue);
+		//msg->SetVerboseLevel(1);
+		G4AutoDelete::Register(msg);
+		fFieldMessenger.Put(msg);
+
+	}
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetCollimator(const bool& value) {
+	if (!value && fPhysCollInner->GetMotherLogical() == fLogicWorld) {
+		fLogicWorld->RemoveDaughter(fPhysCollInner);
+		fLogicWorld->RemoveDaughter(fPhysCollOuter);
+		fPhysCollInner->SetMotherLogical(0);
+		fPhysCollOuter->SetMotherLogical(0);
+		G4cout << "DetectorConstruction: deactivate collimator" << G4endl;
+	} else if (value && fPhysCollInner->GetMotherLogical() == 0) {
+		fLogicWorld->AddDaughter(fPhysCollInner);
+		fLogicWorld->AddDaughter(fPhysCollOuter);
+		fPhysCollInner->SetMotherLogical(fLogicWorld);
+		fPhysCollOuter->SetMotherLogical(fLogicWorld);
+		G4cout << "DetectorConstruction: activate collimator" << G4endl;
+	}
+	G4RunManager::GetRunManager()->GeometryHasBeenModified();
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void DetectorConstruction::SetCollInnerMaterial(G4String materialChoice) {
+	G4Material* newMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
+			materialChoice);
+	if (newMaterial && fCollMaterialInner != newMaterial) {
+		fCollMaterialInner = newMaterial;
+		if (fLogicCollInner)
+			fLogicCollInner->SetMaterial(fCollMaterialInner);
+		G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+		G4cout << "Inner collimator material set to " << materialChoice
+				<< G4endl;
+	}
+	if (newMaterial == 0) {
+		G4ExceptionDescription msg;
+		msg << "Material " << materialChoice << " not known";
+		G4Exception("DetectorConstruction", "Please select a known material.",
+				JustWarning, msg);
+	}
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void DetectorConstruction::SetCollOuterMaterial(G4String materialChoice) {
+	G4Material* newMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
+			materialChoice);
+	if (newMaterial && fCollMaterialOuter != newMaterial) {
+		fCollMaterialOuter = newMaterial;
+		if (fLogicCollInner)
+			fLogicCollInner->SetMaterial(fCollMaterialOuter);
+		G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+		G4cout << "Outer collimator material set to " << materialChoice
+				<< G4endl;
+	}
+	if (newMaterial == 0) {
+		G4ExceptionDescription msg;
+		msg << "Material " << materialChoice << " not known";
+		G4Exception("DetectorConstruction", "Please select a known material.",
+				JustWarning, msg);
+	}
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void DetectorConstruction::SetCollInnerRadius(G4double radius) {
+	fSolidCollInner->SetInnerRadius(radius);
+	G4RunManager::GetRunManager()->GeometryHasBeenModified();
+	G4cout << "Inner collimator radius set to " << G4BestUnit(radius, "Length")
+			<< G4endl;
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void DetectorConstruction::SetCollMiddleRadius(G4double radius) {
+	fSolidCollInner->SetOuterRadius(radius);
+	fSolidCollOuter->SetInnerRadius(radius);
+	G4RunManager::GetRunManager()->GeometryHasBeenModified();
+	G4cout << "Middle collimator radius set to " << G4BestUnit(radius, "Length")
+			<< G4endl;
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void DetectorConstruction::SetCollOuterRadius(G4double radius) {
+	fSolidCollOuter->SetOuterRadius(radius);
+	G4RunManager::GetRunManager()->GeometryHasBeenModified();
+	G4cout << "Outer collimator radius set to " << G4BestUnit(radius, "Length")
+			<< G4endl;
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void DetectorConstruction::SetCollThickness(G4double val) {
+	fSolidCollInner->SetZHalfLength(val / 2.);
+	fSolidCollOuter->SetZHalfLength(val / 2.);
+	G4RunManager::GetRunManager()->GeometryHasBeenModified();
+	G4cout << "Set collimator thickness set to " << G4BestUnit(val, "Length")
+			<< G4endl;
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void DetectorConstruction::SetAbsorberXpos(G4double val) {
+	fXposAbs[1] = val;
+	ComputeDetectorParameters();
+	G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void DetectorConstruction::SetNbOfFilter(G4int ival) {
+	// set the number of Filter
+	//
+	if (ival < 1 || ival > (MaxFilter - 1)) {
+		G4cout << "\n ---> warning from SetfNbOfFilter: " << ival
+				<< " must be at least 1 and and most " << MaxFilter - 1
+				<< ". Command refused" << G4endl;
+		return;
+	}
+	fNbOfFilter = ival;
+	G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+void DetectorConstruction::SetFilterMaterial(G4int ival,
+		const G4String& material) {
+	// search the material by its name
+	//
+	if (ival > fNbOfFilter || ival <= 0) {
+		G4cout << "\n --->warning from SetFilterMaterial: Filter number "
+				<< ival << " out of range. Command refused" << G4endl;
+		return;
+	}
+	G4Material* pttoMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
+			material);
+	if (pttoMaterial)
+		fFilterMaterial[ival] = pttoMaterial;
+	G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetFilterThickness(G4int ival, G4double val) {
+	// change Filter thickness
+	//
+	if (ival > fNbOfFilter || ival <= 0) {
+		G4cout << "\n --->warning from SetFilterThickness: Filter number "
+				<< ival << " out of range. Command refused" << G4endl;
+		return;
+	}
+	if (val <= DBL_MIN) {
+		G4cout << "\n --->warning from SetFilterThickness: thickness " << val
+				<< " out of range. Command refused" << G4endl;
+		return;
+	}
+	fFilterThickness[ival] = val;
+	G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetFilterXpos(G4int ival, G4double val) {
+	fXposFilter[ival] = val;
+	ComputeDetectorParameters();
+	G4RunManager::GetRunManager()->ReinitializeGeometry();
+}
+
+void DetectorConstruction::SetFilterPos(G4ThreeVector pos) {
+	G4cout << "Filter 1 is set to position" << pos << G4endl;
+	fPhysiFilter[1]->SetTranslation(pos);
+	G4RunManager::GetRunManager()->GeometryHasBeenModified();
+}
+
+void DetectorConstruction::SetFilterRot(G4double phi) {
+	// u, v, w are the daughter axes, projected on the mother frame
+	G4ThreeVector w = G4ThreeVector(1, 0, 0);
+	G4ThreeVector v = G4ThreeVector(0., std::cos(phi), -std::sin(phi));
+	G4ThreeVector u = G4ThreeVector(0, std::sin(phi), std::cos(phi));
+	G4RotationMatrix* rotm1 = new G4RotationMatrix(u, v, w);
+	fPhysiFilter[1]->SetRotation(rotm1);
+	G4RunManager::GetRunManager()->GeometryHasBeenModified();
+	G4cout << "Filter 1 rotated to phi = " << phi << G4endl;
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetSizeX(G4double value) {
+	fFilterSizeX = value;
+	G4RunManager::GetRunManager()->GeometryHasBeenModified();
+
+}
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 void DetectorConstruction::DefineMaterials() {
 	// This function illustrates the possible ways to define materials using
 	// G4 database on G4Elements
@@ -374,439 +821,3 @@ void DetectorConstruction::DefineMaterials() {
 
 	//  G4cout << *(G4Material::GetMaterialTable()) << G4endl;
 }
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::ComputeCalorParameters() {
-	// Compute derived parameters of the calorimeter
-	fLayerThickness = 0.;
-	for (G4int iAbs = 1; iAbs <= fNbOfAbsor; iAbs++) {
-		fLayerThickness += fAbsorThickness[iAbs];
-	}
-	fCalorThickness = fNbOfLayers * fLayerThickness;
-	fWorldSizeX = 1.2 * fCalorThickness;
-	fWorldSizeYZ = 1.2 * fCalorSizeYZ;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-G4VPhysicalVolume* DetectorConstruction::ConstructCalorimeter() {
-	// complete the Calor parameters definition
-	ComputeCalorParameters();
-
-	// Cleanup old geometry
-	G4GeometryManager::GetInstance()->OpenGeometry();
-	G4PhysicalVolumeStore::GetInstance()->Clean();
-	G4LogicalVolumeStore::GetInstance()->Clean();
-	G4SolidStore::GetInstance()->Clean();
-
-	//VisAttributes
-	G4VisAttributes * Black = new G4VisAttributes(G4Colour(0.0, 0.0, 0.0));
-	G4VisAttributes * Gray = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5));
-	G4VisAttributes * yellow = new G4VisAttributes(
-			G4Colour(255 / 255., 255 / 255., 51 / 255.));
-	G4VisAttributes * red = new G4VisAttributes(
-			G4Colour(255 / 255., 0 / 255., 0 / 255.));
-	G4VisAttributes * blue = new G4VisAttributes(
-			G4Colour(0 / 255., 0 / 255., 255 / 255.));
-	Black->SetVisibility(true);
-
-	Gray->SetVisibility(true);
-	Gray->SetForceSolid(true);
-
-	yellow->SetVisibility(true);
-	yellow->SetForceSolid(true);
-
-	red->SetVisibility(true);
-	red->SetForceSolid(true);
-
-	blue->SetVisibility(true);
-	blue->SetForceSolid(true);
-
-	//
-	// World
-	//
-
-	fSolidWorld = new G4Box("World",                                //its name
-			fWorldSizeX / 2, fWorldSizeYZ / 2, fWorldSizeYZ / 2);  //its size
-
-	fLogicWorld = new G4LogicalVolume(fSolidWorld,            //its solid
-			fDefaultMaterial,        //its material
-			"World");                //its name
-
-	fPhysiWorld = new G4PVPlacement(0,                      //no rotation
-			G4ThreeVector(),       //at (0,0,0)
-			fLogicWorld,             //its fLogical volume
-			"World",                 //its name
-			0,                       //its mother  volume
-			false,                   //no boolean operation
-			0);                      //copy number
-	//
-	// Calorimeter
-	//
-
-	fSolidCalor = new G4Box("Calorimeter", fCalorThickness / 2,
-			fCalorSizeYZ / 2, fCalorSizeYZ / 2);
-
-	fLogicCalor = new G4LogicalVolume(fSolidCalor, fDefaultMaterial,
-			"Calorimeter");
-
-	fPhysiCalor = new G4PVPlacement(0,                     //no rotation
-			G4ThreeVector(),        //at (0,0,0)
-			fLogicCalor,            //its fLogical volume
-			"Calorimeter",          //its name
-			fLogicWorld,            //its mother  volume
-			false,                  //no boolean operation
-			0);                     //copy number
-
-	//
-	// Layers
-	//
-
-	fSolidLayer = new G4Box("Layer", fLayerThickness / 2, fCalorSizeYZ / 2,
-			fCalorSizeYZ / 2);
-
-	fLogicLayer = new G4LogicalVolume(fSolidLayer, fDefaultMaterial, "Layer");
-	if (fNbOfLayers > 1)
-		fPhysiLayer = new G4PVReplica("Layer", fLogicLayer, fLogicCalor, kXAxis,
-				fNbOfLayers, fLayerThickness);
-	else
-		fPhysiLayer = new G4PVPlacement(0, G4ThreeVector(), fLogicLayer,
-				"Layer", fLogicCalor, false, 0);
-
-	//
-	// Absorbers
-	//
-
-	G4double xfront = -0.5 * fLayerThickness;
-	for (G4int k = 1; k <= fNbOfAbsor; k++) {
-		fSolidAbsor[k] = new G4Box(fAbsorMaterial[k]->GetName(),      //its name
-				fAbsorThickness[k] / 2, fCalorSizeYZ / 2, fCalorSizeYZ / 2);
-
-		fLogicAbsor[k] = new G4LogicalVolume(fSolidAbsor[k],    //its solid
-				fAbsorMaterial[k], //its material
-				fAbsorMaterial[k]->GetName());
-
-		G4double xcenter = xfront + 0.5 * fAbsorThickness[k];
-		xfront += fAbsorThickness[k];
-		fPhysiAbsor[k] = new G4PVPlacement(0, G4ThreeVector(xcenter, 0., 0.),
-				fLogicAbsor[k], fAbsorMaterial[k]->GetName(), fLogicLayer,
-				false, k);                                //copy number
-
-		if (k == 1 || k == 3 || k == 5 || k == 7 || k == 9 || k == 11 || k == 13
-				|| k == 15 || k == 17 || k == 19 || k == 21)
-			fLogicAbsor[k]->SetVisAttributes(blue);
-		if (k == 2)
-			fLogicAbsor[k]->SetVisAttributes(yellow);
-		if (k == 4 || k == 6 || k == 8 || k == 10 || k == 12 || k == 14
-				|| k == 16 || k == 18 || k == 20)
-			fLogicAbsor[k]->SetVisAttributes(red);
-
-	}
-
-	PrintCalorParameters();
-
-	//always return the fPhysical World
-	//
-	return fPhysiWorld;
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::PrintCalorParameters() {
-	G4cout << "\n-------------------------------------------------------------"
-			<< "\n ---> The calorimeter is " << fNbOfLayers << " layers of:";
-	for (G4int i = 1; i <= fNbOfAbsor; i++) {
-		G4cout << "\n \t" << std::setw(12) << fAbsorMaterial[i]->GetName()
-				<< ": " << std::setw(6)
-				<< G4BestUnit(fAbsorThickness[i], "Length");
-	}
-	G4cout
-			<< "\n-------------------------------------------------------------\n";
-
-	G4cout << "\n" << fDefaultMaterial << G4endl;
-	for (G4int j = 1; j <= fNbOfAbsor; j++)
-		G4cout << "\n" << fAbsorMaterial[j] << G4endl;
-
-	G4cout
-			<< "\n-------------------------------------------------------------\n";
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::SetWorldMaterial(const G4String& material) {
-	// search the material by its name
-	G4Material* pttoMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
-			material);
-	if (pttoMaterial)
-		fDefaultMaterial = pttoMaterial;
-	G4RunManager::GetRunManager()->PhysicsHasBeenModified();
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::SetNbOfLayers(G4int ival) {
-	// set the number of Layers
-	//
-	if (ival < 1) {
-		G4cout << "\n --->warning from SetfNbOfLayers: " << ival
-				<< " must be at least 1. Command refused" << G4endl;
-		return;
-	}
-	fNbOfLayers = ival;
-	G4RunManager::GetRunManager()->ReinitializeGeometry();
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::SetNbOfAbsor(G4int ival) {
-	// set the number of Absorbers
-	//
-	if (ival < 1 || ival > (kMaxAbsor - 1)) {
-		G4cout << "\n ---> warning from SetfNbOfAbsor: " << ival
-				<< " must be at least 1 and and most " << kMaxAbsor - 1
-				<< ". Command refused" << G4endl;
-		return;
-	}
-	fNbOfAbsor = ival;
-	G4RunManager::GetRunManager()->ReinitializeGeometry();
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::SetAbsorMaterial(G4int ival,
-		const G4String& material) {
-	// search the material by its name
-	//
-	if (ival > kMaxAbsor || ival <= 0) {
-		G4cout << "\n --->warning from SetAbsorMaterial: absor number " << ival
-				<< " out of range. Command refused" << G4endl;
-		return;
-	}
-
-	G4Material* pttoMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
-			material);
-	if (pttoMaterial)
-		fAbsorMaterial[ival] = pttoMaterial;
-	G4RunManager::GetRunManager()->PhysicsHasBeenModified();
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::SetAbsorThickness(G4int ival, G4double val) {
-	// change Absorber thickness
-	//
-	if (ival > fNbOfAbsor || ival <= 0) {
-		G4cout << "\n --->warning from SetAbsorThickness: absor number " << ival
-				<< " out of range. Command refused" << G4endl;
-		return;
-	}
-	if (val <= DBL_MIN) {
-		G4cout << "\n --->warning from SetAbsorThickness: thickness " << val
-				<< " out of range. Command refused" << G4endl;
-		return;
-	}
-	fAbsorThickness[ival] = val;
-	G4RunManager::GetRunManager()->ReinitializeGeometry();
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::SetCalorSizeYZ(G4double val) {
-	// change the transverse size
-	//
-	if (val <= DBL_MIN) {
-		G4cout << "\n --->warning from SetfCalorSizeYZ: thickness " << val
-				<< " out of range. Command refused" << G4endl;
-		return;
-	}
-	fCalorSizeYZ = val;
-	G4RunManager::GetRunManager()->ReinitializeGeometry();
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-#include "G4GlobalMagFieldMessenger.hh"
-#include "G4AutoDelete.hh"
-
-void DetectorConstruction::ConstructSDandField() {
-	if (fFieldMessenger.Get() == 0) {
-		// Create global magnetic field messenger.
-		// Uniform magnetic field is then created automatically if
-		// the field value is not zero.
-		G4ThreeVector fieldValue = G4ThreeVector();
-		G4GlobalMagFieldMessenger* msg = new G4GlobalMagFieldMessenger(
-				fieldValue);
-		//msg->SetVerboseLevel(1);
-		G4AutoDelete::Register(msg);
-		fFieldMessenger.Put(msg);
-
-	}
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::SetCollimator(const bool& value) {
-	if (!value && fPhysCollInner->GetMotherLogical() == fLogicWorld) {
-		fLogicWorld->RemoveDaughter(fPhysCollInner);
-		fLogicWorld->RemoveDaughter(fPhysCollOuter);
-		fPhysCollInner->SetMotherLogical(0);
-		fPhysCollOuter->SetMotherLogical(0);
-		G4cout << "DetectorConstruction: deactivate collimator" << G4endl;
-	} else if (value && fPhysCollInner->GetMotherLogical() == 0) {
-		fLogicWorld->AddDaughter(fPhysCollInner);
-		fLogicWorld->AddDaughter(fPhysCollOuter);
-		fPhysCollInner->SetMotherLogical(fLogicWorld);
-		fPhysCollOuter->SetMotherLogical(fLogicWorld);
-		G4cout << "DetectorConstruction: activate collimator" << G4endl;
-	}
-	G4RunManager::GetRunManager()->GeometryHasBeenModified();
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void DetectorConstruction::SetCollInnerMaterial(G4String materialChoice) {
-	G4Material* newMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
-			materialChoice);
-	if (newMaterial && fCollMaterialInner != newMaterial) {
-		fCollMaterialInner = newMaterial;
-		if (fLogicCollInner)
-			fLogicCollInner->SetMaterial(fCollMaterialInner);
-		G4RunManager::GetRunManager()->PhysicsHasBeenModified();
-		G4cout << "Inner collimator material set to " << materialChoice
-				<< G4endl;
-	}
-	if (newMaterial == 0) {
-		G4ExceptionDescription msg;
-		msg << "Material " << materialChoice << " not known";
-		G4Exception("DetectorConstruction", "Please select a known material.",
-				JustWarning, msg);
-	}
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void DetectorConstruction::SetCollOuterMaterial(G4String materialChoice) {
-	G4Material* newMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
-			materialChoice);
-	if (newMaterial && fCollMaterialOuter != newMaterial) {
-		fCollMaterialOuter = newMaterial;
-		if (fLogicCollInner)
-			fLogicCollInner->SetMaterial(fCollMaterialOuter);
-		G4RunManager::GetRunManager()->PhysicsHasBeenModified();
-		G4cout << "Outer collimator material set to " << materialChoice
-				<< G4endl;
-	}
-	if (newMaterial == 0) {
-		G4ExceptionDescription msg;
-		msg << "Material " << materialChoice << " not known";
-		G4Exception("DetectorConstruction", "Please select a known material.",
-				JustWarning, msg);
-	}
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void DetectorConstruction::SetCollInnerRadius(G4double radius) {
-	fSolidCollInner->SetInnerRadius(radius);
-	G4RunManager::GetRunManager()->GeometryHasBeenModified();
-	G4cout << "Inner collimator radius set to " << G4BestUnit(radius, "Length")
-			<< G4endl;
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void DetectorConstruction::SetCollMiddleRadius(G4double radius) {
-	fSolidCollInner->SetOuterRadius(radius);
-	fSolidCollOuter->SetInnerRadius(radius);
-	G4RunManager::GetRunManager()->GeometryHasBeenModified();
-	G4cout << "Middle collimator radius set to " << G4BestUnit(radius, "Length")
-			<< G4endl;
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void DetectorConstruction::SetCollOuterRadius(G4double radius) {
-	fSolidCollOuter->SetOuterRadius(radius);
-	G4RunManager::GetRunManager()->GeometryHasBeenModified();
-	G4cout << "Outer collimator radius set to " << G4BestUnit(radius, "Length")
-			<< G4endl;
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void DetectorConstruction::SetCollThickness(G4double val) {
-	fSolidCollInner->SetZHalfLength(val / 2.);
-	fSolidCollOuter->SetZHalfLength(val / 2.);
-	G4RunManager::GetRunManager()->GeometryHasBeenModified();
-	G4cout << "Set collimator thickness set to " << G4BestUnit(val, "Length")
-			<< G4endl;
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void DetectorConstruction::SetAbsorberXpos(G4double val) {
-	fXposAbs[1] = val;
-	ComputeCalorParameters();
-	G4RunManager::GetRunManager()->ReinitializeGeometry();
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void DetectorConstruction::SetNbOfFilter(G4int ival) {
-	// set the number of Filter
-	//
-	if (ival < 1 || ival > (MaxFilter - 1)) {
-		G4cout << "\n ---> warning from SetfNbOfFilter: " << ival
-				<< " must be at least 1 and and most " << MaxFilter - 1
-				<< ". Command refused" << G4endl;
-		return;
-	}
-	fNbOfFilter = ival;
-	G4RunManager::GetRunManager()->ReinitializeGeometry();
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-void DetectorConstruction::SetFilterMaterial(G4int ival,
-		const G4String& material) {
-	// search the material by its name
-	//
-	if (ival > fNbOfFilter || ival <= 0) {
-		G4cout << "\n --->warning from SetFilterMaterial: Filter number "
-				<< ival << " out of range. Command refused" << G4endl;
-		return;
-	}
-	G4Material* pttoMaterial = G4NistManager::Instance()->FindOrBuildMaterial(
-			material);
-	if (pttoMaterial)
-		fFilterMaterial[ival] = pttoMaterial;
-	G4RunManager::GetRunManager()->PhysicsHasBeenModified();
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::SetFilterThickness(G4int ival, G4double val) {
-	// change Filter thickness
-	//
-	if (ival > fNbOfFilter || ival <= 0) {
-		G4cout << "\n --->warning from SetFilterThickness: Filter number "
-				<< ival << " out of range. Command refused" << G4endl;
-		return;
-	}
-	if (val <= DBL_MIN) {
-		G4cout << "\n --->warning from SetFilterThickness: thickness " << val
-				<< " out of range. Command refused" << G4endl;
-		return;
-	}
-	fFilterThickness[ival] = val;
-	G4RunManager::GetRunManager()->ReinitializeGeometry();
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void DetectorConstruction::SetFilterXpos(G4int ival, G4double val) {
-	fXposFilter[ival] = val;
-	ComputeCalorParameters();
-	G4RunManager::GetRunManager()->ReinitializeGeometry();
-}
-
-void DetectorConstruction::SetFilterPos(G4ThreeVector pos) {
-	G4cout << "Filter 1 is set to position" << pos << G4endl;
-	fPhysiFilter[1]->SetTranslation(pos);
-	G4RunManager::GetRunManager()->GeometryHasBeenModified();
-}
-
-void DetectorConstruction::SetFilterRot(G4double phi) {
-	// u, v, w are the daughter axes, projected on the mother frame
-	G4ThreeVector w = G4ThreeVector(1, 0, 0);
-	G4ThreeVector v = G4ThreeVector(0., std::cos(phi), -std::sin(phi));
-	G4ThreeVector u = G4ThreeVector(0, std::sin(phi), std::cos(phi));
-	G4RotationMatrix* rotm1 = new G4RotationMatrix(u, v, w);
-	fPhysiFilter[1]->SetRotation(rotm1);
-	G4RunManager::GetRunManager()->GeometryHasBeenModified();
-	G4cout << "Filter 1 rotated to phi = " << phi << G4endl;
-}
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

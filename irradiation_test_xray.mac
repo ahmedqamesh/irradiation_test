@@ -9,7 +9,6 @@
 #
 /testem/phys/addPhysics  local
 #
-/testem/det/setNbOfLayers 1
 /testem/det/setNbOfAbsor 2
 /testem/det/setAbsor 1 Tungsten 2 mm
 /testem/det/setAbsor 2 Silicon 0.3 mm

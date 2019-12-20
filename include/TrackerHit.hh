@@ -8,7 +8,7 @@
 #include "G4ThreeVector.hh"
 #include "tls.hh"
 
-/// Calorimeter hit class
+/// Detector hit class
 ///
 /// It defines data members to store the the energy deposit and track lengths
 /// of charged particles in a selected volume:

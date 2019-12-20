@@ -8,12 +8,12 @@
 /control/verbose 2
 /run/verbose 2
 #
-#/testem/phys/addPhysics  local
+/testem/phys/addPhysics  local
 #
-/testem/det/setNbOfLayers 50
+/testem/det/setNbOfLayers 1
 /testem/det/setNbOfAbsor 2
-/testem/det/setAbsor 1 Tungsten 2 mm
-/testem/det/setAbsor 2 Silicon 0.3 mm
+/testem/det/setAbsor 1 Tungsten 2 cm
+/testem/det/setAbsor 2 Silicon 0.3 cm
 #
 /run/setCut 100 um
 #
@@ -22,6 +22,7 @@
 /testem/gun/setDefault
 /gun/particle e-
 /gun/energy 1 GeV
+/gun/position   -20.0 0.0 0.0 cm 
 #
 /analysis/setFileName run02
 /analysis/h1/set 1 100 900. 1000. MeV
