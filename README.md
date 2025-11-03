@@ -1,6 +1,6 @@
 # About the Project
 A program to simulate electrons and gammas irradiation on several layers. Shielding and triggering can be simulated and the setup (e.g. geometry, materials) can be easily changed.
 
-The program uses the GEANT4 framework. The corresponding \url[http://geant4.web.cern.ch/geant4/license/LICENSE.html](GEANT4 license).
+The program uses the GEANT4 framework. The corresponding [GEANT4 license](http://geant4.web.cern.ch/geant4/license/LICENSE.html).
 
 This software is under heavy development right now. Nevertheless only compiling revisions are comitted to the master branch. The Readme/wiki will be build soon. So far: Please contact the author if you have any questions.
