@@ -1,4 +1,4 @@
-# xRay_RD53
+# About the Project
 A program to simulate electrons and gammas irradiation on several layers. Shielding and triggering can be simulated and the setup (e.g. geometry, materials) can be easily changed.
 
 The program uses the GEANT4 framework. The corresponding GEANT4 license can be found here: http://geant4.web.cern.ch/geant4/license/LICENSE.html
